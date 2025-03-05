@@ -2,10 +2,10 @@ import streamlit as st
 import requests
 
 # Streamlit App Title
-st.title("Freshdesk Ticket Cleanup")
+st.title("Product HelpDesk Ticket Cleanup")
 
 # Configuration Section
-st.subheader("Freshdesk Configuration")
+#st.subheader("Freshdesk Configuration")
 api_key = "ZMYPc0EUJg1tBuvOn1Fx"  # API key hardcoded here for now (please avoid hardcoding in production)
 
 # Subdomain configuration (since we know it's rseaproduct)
@@ -59,12 +59,12 @@ def delete_3m_tickets():
 
 # Ticket Cleanup Section: Delete 3M Tickets
 st.subheader("Ticket Cleanup")
-if st.button("Delete 3M Tickets Now"):
+if st.button("Delete 3M Tickets"):
     deleted_count = delete_3m_tickets()
     st.success(f"Deleted {deleted_count} tickets with 3M subjects")
 
 # Display All Tickets Section: View All Open Tickets
-st.subheader("📩 All Open Tickets")
+st.subheader("📩 All Open 3M Tickets")
 
 if st.button("Refresh Ticket List"):
     st.rerun()
