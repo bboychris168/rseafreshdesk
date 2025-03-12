@@ -1,6 +1,7 @@
 import streamlit as st
 import requests
 from datetime import datetime, timedelta
+import pytz
 
 # Streamlit App Title
 st.title("Product HelpDesk Ticket Cleanup")
@@ -78,14 +79,19 @@ def parse_date(date_str):
     if not date_str:
         return None
     try:
-        return datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+        # Parse the ISO format date and ensure it's timezone-aware
+        dt = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+        # Convert to UTC if it has a timezone, otherwise assume UTC
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=pytz.UTC)
+        return dt
     except (ValueError, AttributeError):
         return None
 
 # Function to close recent 3M tickets
 def close_recent_3m_tickets():
     target_keywords = ["3M Order Change", "3M Order Confirmation"]
-    one_week_ago = datetime.now() - timedelta(days=7)
+    one_week_ago = datetime.now(pytz.UTC) - timedelta(days=7)
     tickets = get_all_tickets()
     closed_count = 0
 
@@ -115,7 +121,7 @@ if st.button("Refresh Ticket List"):
     st.rerun()
 
 if api_key:
-    one_week_ago = datetime.now() - timedelta(days=7)
+    one_week_ago = datetime.now(pytz.UTC) - timedelta(days=7)
     tickets = get_all_tickets()
     recent_3m_tickets = [
         ticket for ticket in tickets
