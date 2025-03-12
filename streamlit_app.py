@@ -29,7 +29,7 @@ def get_all_tickets():
             params = {
                 'per_page': 100,
                 'page': page,
-                'query': '"status:2 OR status:3" AND "subject:\'3M Order Change\' OR subject:\'3M Order Confirmation\'"'
+                'query': '(status:2 OR status:3) AND (subject:"3M Order Change" OR subject:"3M Order Confirmation")'
             }
             response = requests.get(
                 f"{BASE_URL}/tickets",
@@ -47,7 +47,9 @@ def get_all_tickets():
             page += 1
             
         except requests.exceptions.RequestException as e:
-            st.error(f"Error fetching tickets: {e}")
+            st.error(f"Error fetching tickets: {str(e)}")
+            if hasattr(e, 'response') and hasattr(e.response, 'text'):
+                st.error(f"API Response: {e.response.text}")
             break
             
     return all_tickets
