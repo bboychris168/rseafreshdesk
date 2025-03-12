@@ -47,12 +47,13 @@ def delete_ticket(ticket_id):
 
 # Manual Deletion Section: Delete 3M-related tickets
 def delete_3m_tickets():
-    target_subjects = ["3M Order Change", "3M Order Confirmation"]
+    target_keywords = ["3M Order Change", "3M Order Confirmation"]
     tickets = get_tickets()
     deleted_count = 0
 
     for ticket in tickets:
-        if ticket.get("subject", "") in target_subjects:
+        subject = ticket.get("subject", "")
+        if any(keyword in subject for keyword in target_keywords):
             if delete_ticket(ticket["id"]):
                 deleted_count += 1
     return deleted_count
