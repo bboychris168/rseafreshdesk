@@ -73,6 +73,15 @@ def close_ticket(ticket_id):
         st.error(f"Error closing ticket {ticket_id}: {e}")
         return False
 
+# Function to safely parse date
+def parse_date(date_str):
+    if not date_str:
+        return None
+    try:
+        return datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+    except (ValueError, AttributeError):
+        return None
+
 # Function to close recent 3M tickets
 def close_recent_3m_tickets():
     target_keywords = ["3M Order Change", "3M Order Confirmation"]
@@ -82,11 +91,12 @@ def close_recent_3m_tickets():
 
     for ticket in tickets:
         subject = ticket.get("subject", "")
-        created_at = datetime.fromisoformat(ticket.get("created_at", "").replace("Z", "+00:00"))
+        created_at = parse_date(ticket.get("created_at"))
         
-        if (any(keyword in subject for keyword in target_keywords) and 
+        if (created_at and 
+            any(keyword in subject for keyword in target_keywords) and 
             created_at > one_week_ago and 
-            ticket.get("status") != 5):  # Not already closed
+            ticket.get("status") != 5):
             
             if close_ticket(ticket["id"]):
                 closed_count += 1
@@ -111,7 +121,8 @@ if api_key:
         ticket for ticket in tickets
         if (any(keyword in ticket.get("subject", "") 
             for keyword in ["3M Order Change", "3M Order Confirmation"]) and
-            datetime.fromisoformat(ticket.get("created_at", "").replace("Z", "+00:00")) > one_week_ago)
+            (created_at := parse_date(ticket.get("created_at"))) and
+            created_at > one_week_ago)
     ]
     
     if recent_3m_tickets:
