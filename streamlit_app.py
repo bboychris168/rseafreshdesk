@@ -58,8 +58,19 @@ def close_ticket(ticket_id):
         return False
 
     try:
-        # Update ticket status to 'Closed' (status 5 in Freshdesk)
-        data = {"status": 5}
+        # Update ticket with Closed status (4) and custom fields
+        data = {
+            "status": 4,  # 4 = Closed
+            "priority": 1,
+            "custom_fields": {
+                "cf_type": "Order Confirmation",
+                "cf_system": "Pronto"
+            },
+            "note": {
+                "body": "Automatically closed 3M ticket",
+                "private": True
+            }
+        }
         response = requests.put(
             f"{BASE_URL}/tickets/{ticket_id}",
             auth=(api_key, "X"),
@@ -67,9 +78,14 @@ def close_ticket(ticket_id):
             json=data
         )
         response.raise_for_status()
+        
+        # Print response for debugging
+        st.write(f"Debug - Response for ticket {ticket_id}: {response.status_code}")
         return True
     except requests.exceptions.RequestException as e:
-        st.error(f"Error closing ticket {ticket_id}: {e}")
+        st.error(f"Error closing ticket {ticket_id}: {str(e)}")
+        if hasattr(e.response, 'text'):
+            st.error(f"Response details: {e.response.text}")
         return False
 
 # Function to close 3M tickets
@@ -81,7 +97,7 @@ def close_3m_tickets():
     for ticket in tickets:
         subject = ticket.get("subject", "")
         if (any(keyword in subject for keyword in target_keywords) and 
-            ticket.get("status") != 5):  # Not closed
+            ticket.get("status") != 4):  # Check for status 4 (Closed)
             if close_ticket(ticket["id"]):
                 closed_count += 1
     return closed_count
@@ -104,7 +120,7 @@ if api_key:
         ticket for ticket in tickets
         if (any(keyword in ticket.get("subject", "") 
             for keyword in ["3M Order Change", "3M Order Confirmation"]) and
-            ticket.get("status") != 5)  # Not closed
+            ticket.get("status") != 4)  # Check for status 4 (Closed)
     ]
     
     if open_3m_tickets:
