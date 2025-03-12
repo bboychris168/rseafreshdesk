@@ -16,15 +16,24 @@ BASE_URL = f"https://{subdomain}.freshdesk.com/api/v2"
 headers = {"Content-Type": "application/json"}
 
 # Function to get all tickets from Freshdesk
-def get_tickets():
+def get_tickets(page=1):
     if not api_key:
         st.error("Please enter your Freshdesk API key.")
         return []
 
     try:
-        # Fetching all tickets from the inbox
-        response = requests.get(f"{BASE_URL}/tickets", auth=(api_key, "X"), headers=headers)
-        response.raise_for_status()  # Raises exception for error responses
+        # Fetching tickets with pagination (100 per page)
+        params = {
+            'per_page': 100,
+            'page': page
+        }
+        response = requests.get(
+            f"{BASE_URL}/tickets",
+            auth=(api_key, "X"),
+            headers=headers,
+            params=params
+        )
+        response.raise_for_status()
         return response.json()
     except requests.exceptions.RequestException as e:
         st.error(f"Error fetching tickets: {e}")
@@ -67,12 +76,18 @@ if st.button("Delete 3M Tickets"):
 # Display All Tickets Section: View All Open Tickets
 st.subheader("📩 All Open 3M Tickets")
 
+# Add pagination controls
+col1, col2 = st.columns([4, 1])
+with col2:
+    page = st.number_input("Page", min_value=1, max_value=10, value=1, step=1)
+
 if st.button("Refresh Ticket List"):
     st.rerun()
 
 if api_key:
-    tickets = get_tickets()
+    tickets = get_tickets(page)
     if tickets:
+        st.write(f"Showing page {page} (up to 100 tickets per page)")
         for ticket in tickets:
             st.write(f"📌 Ticket #{ticket['id']}: {ticket.get('subject', 'No subject')}")
     else:
