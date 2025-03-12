@@ -28,7 +28,8 @@ def get_all_tickets():
         try:
             params = {
                 'per_page': 100,
-                'page': page
+                'page': page,
+                'query': '"status:2 OR status:3" AND "subject:\'3M Order Change\' OR subject:\'3M Order Confirmation\'"'
             }
             response = requests.get(
                 f"{BASE_URL}/tickets",
@@ -115,16 +116,9 @@ if st.button("Refresh Ticket List"):
     st.rerun()
 
 if api_key:
-    tickets = get_all_tickets()
-    open_3m_tickets = [
-        ticket for ticket in tickets
-        if (any(keyword in ticket.get("subject", "") 
-            for keyword in ["3M Order Change", "3M Order Confirmation"]) and
-            ticket.get("status") != 4)  # Check for status 4 (Closed)
-    ]
-    
-    if open_3m_tickets:
-        for ticket in open_3m_tickets:
+    tickets = get_all_tickets()  # Now returns only open 3M tickets
+    if tickets:
+        for ticket in tickets:
             st.write(f"📌 Ticket #{ticket['id']}: {ticket.get('subject', 'No subject')}")
     else:
         st.write("No open 3M tickets found.")
