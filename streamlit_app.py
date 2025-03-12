@@ -1,7 +1,5 @@
 import streamlit as st
 import requests
-from datetime import datetime, timedelta
-import pytz
 
 # Streamlit App Title
 st.title("Product HelpDesk Ticket Cleanup")
@@ -41,7 +39,7 @@ def get_all_tickets():
             response.raise_for_status()
             tickets = response.json()
             
-            if not tickets:  # No more tickets
+            if not tickets:
                 break
                 
             all_tickets.extend(tickets)
@@ -74,68 +72,45 @@ def close_ticket(ticket_id):
         st.error(f"Error closing ticket {ticket_id}: {e}")
         return False
 
-# Function to safely parse date
-def parse_date(date_str):
-    if not date_str:
-        return None
-    try:
-        # Parse the ISO format date and ensure it's timezone-aware
-        dt = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
-        # Convert to UTC if it has a timezone, otherwise assume UTC
-        if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=pytz.UTC)
-        return dt
-    except (ValueError, AttributeError):
-        return None
-
-# Function to close recent 3M tickets
-def close_recent_3m_tickets():
+# Function to close 3M tickets
+def close_3m_tickets():
     target_keywords = ["3M Order Change", "3M Order Confirmation"]
-    one_week_ago = datetime.now(pytz.UTC) - timedelta(days=7)
     tickets = get_all_tickets()
     closed_count = 0
 
     for ticket in tickets:
         subject = ticket.get("subject", "")
-        created_at = parse_date(ticket.get("created_at"))
-        
-        if (created_at and 
-            any(keyword in subject for keyword in target_keywords) and 
-            created_at > one_week_ago and 
-            ticket.get("status") != 5):
-            
+        if (any(keyword in subject for keyword in target_keywords) and 
+            ticket.get("status") != 5):  # Not closed
             if close_ticket(ticket["id"]):
                 closed_count += 1
     return closed_count
 
 # Ticket Cleanup Section
 st.subheader("Ticket Cleanup")
-if st.button("Close Recent 3M Tickets"):
-    closed_count = close_recent_3m_tickets()
-    st.success(f"Closed {closed_count} 3M tickets from the last week")
+if st.button("Close All 3M Tickets"):
+    closed_count = close_3m_tickets()
+    st.success(f"Closed {closed_count} 3M tickets")
 
-# Display Recent 3M Tickets Section
-st.subheader("📩 Recent 3M Tickets (Last 7 Days)")
+# Display Open 3M Tickets Section
+st.subheader("📩 Open 3M Tickets")
 
 if st.button("Refresh Ticket List"):
     st.rerun()
 
 if api_key:
-    one_week_ago = datetime.now(pytz.UTC) - timedelta(days=7)
     tickets = get_all_tickets()
-    recent_3m_tickets = [
+    open_3m_tickets = [
         ticket for ticket in tickets
         if (any(keyword in ticket.get("subject", "") 
             for keyword in ["3M Order Change", "3M Order Confirmation"]) and
-            (created_at := parse_date(ticket.get("created_at"))) and
-            created_at > one_week_ago)
+            ticket.get("status") != 5)  # Not closed
     ]
     
-    if recent_3m_tickets:
-        for ticket in recent_3m_tickets:
-            status = "🟢 Open" if ticket.get("status") != 5 else "🔴 Closed"
-            st.write(f"📌 Ticket #{ticket['id']}: {ticket.get('subject', 'No subject')} - {status}")
+    if open_3m_tickets:
+        for ticket in open_3m_tickets:
+            st.write(f"📌 Ticket #{ticket['id']}: {ticket.get('subject', 'No subject')}")
     else:
-        st.write("No recent 3M tickets found.")
+        st.write("No open 3M tickets found.")
 else:
     st.warning("Enter Freshdesk API key to view tickets.")
